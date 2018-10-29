@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<!--
+ *  Copyright (c) 2018 The WebRTC project authors. All Rights Reserved.
+ *
+ *  Use of this source code is governed by a BSD-style license
+ *  that can be found in the LICENSE file in the root of the source
+ *  tree.
+-->
+<html>
+<head>
+
+    <title>Side A</title>
+
+    <script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.1.1/socket.io.js"></script>
+    <script src="../../dist/browser.js"/>
+    <script>
+
+    </script>
+
+</head>
+
+<body>
+<script>
+    const alice = rtc.client('alice');
+    const bob = rtc.client('bob');
+
+    alice.init();
+    bob.init();
+
+    alice.connect('bob')
+      .then(channel => {
+      	console.log('alices channel', channel);
+        channel.send('hi')
+
+    });
+
+    bob.listen()
+      .then(channel => {
+      	console.log('bobs channel ', channel);
+        channel.onmessage = function(event) {
+          console.log(event.data);
+        };
+      })
+
+</script>
+
+<h1>
+    Side A
+</h1>
+
+</body>
+</html>
