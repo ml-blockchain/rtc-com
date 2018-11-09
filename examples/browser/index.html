@@ -23,8 +23,11 @@
 <body>
 <script>
 
-    const alliceComm = rtc.communication('alice');
-    const bobComm = rtc.communication('bob');
+    const alliceComm = rtc.communication({name: 'alice'});
+    const bobComm = rtc.communication({name: 'bob'});
+
+    bobComm.initSocket();
+
     const alice = rtc.client('alice', alliceComm);
     const bob = rtc.client('bob', bobComm);
 

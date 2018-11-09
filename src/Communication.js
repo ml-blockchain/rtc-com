@@ -1,22 +1,35 @@
 import { EventsNames } from './EventsNames';
+import { defaultName } from './utils/constants';
 
 export default class Communication {
-  constructor(name, eventNames = new EventsNames()) {
-    this.name = name;
+  constructor({ name, eventNames = new EventsNames() }) {
     this.eventNames = eventNames;
+    this.name = name;
+
+    if (name) {
+      this.initSocket();
+      this.setUniqueEventsNames();
+    }
+
+  }
+
+  setName(name) {
+    this.name = name;
+    this.setUniqueEventsNames();
+  }
+
+  initSocket() {
     this.socket = io('http://localhost:3000', {});
     this.socket.emit(this.eventNames.registerClientInServer, this.name);
 
     this.socket.on(this.eventNames.onOffer, this.getOffer.bind(this));
     this.socket.on(this.eventNames.onCandidate, this.getCandidate.bind(this));
     this.socket.on(this.eventNames.onAnser, this.getAnswer.bind(this));
-
-    if (this.name) {
-      this.setUniqueEventsNames();
-    }
   }
 
   setUniqueEventsNames(name = this.name) {
+    if (!name) return;
+
     const {
       receivedOfferEvent,
       receivedCandidateEvent,
@@ -29,6 +42,7 @@ export default class Communication {
       `${receivedCandidateEvent}-${name}`
     );
     this.eventNames.set(receivedAnswerEvent, `${receivedAnswerEvent}-${name}`);
+    this.eventNames.printEvents();
   }
 
   sendOffer({ partner, offer }) {

@@ -1,12 +1,14 @@
+import {defaultName} from "./utils/constants";
+
 export default class Client {
-  constructor(name, comm) {
+  constructor(name = defaultName, communication) {
     this.socket = io('http://localhost:3000', {});
     this.name = name;
     this.partner = null;
     this.connection = new RTCPeerConnection();
     this.channel = this.connection.createDataChannel('chat');
-    this.comm = comm;
-    this.eventsNames = comm.eventsNames;
+    this.communication = communication;
+    this.eventsNames = communication.eventsNames;
   }
 
   async init() {
@@ -29,7 +31,7 @@ export default class Client {
         const { candidate } = e;
         const partner = this.partner;
 
-        this.comm.sendCandidate({
+        this.communication.sendCandidate({
           partner,
           candidate
         });
@@ -73,7 +75,7 @@ export default class Client {
       .createOffer()
       .then(_offer => (offer = _offer))
       .then(() => this.connection.setLocalDescription(offer))
-      .then(() => this.comm.sendOffer({ partner, offer }));
+      .then(() => this.communication.sendOffer({ partner, offer }));
   }
 
   getOffer(msg) {
@@ -84,7 +86,7 @@ export default class Client {
       .then(() => this.connection.createAnswer())
       .then(_answer => (answer = _answer))
       .then(() => this.connection.setLocalDescription(answer))
-      .then(() => this.comm.sendAnswer({ answer, senderName }));
+      .then(() => this.communication.sendAnswer({ answer, senderName }));
   }
 
   async getAnswer(msg) {
