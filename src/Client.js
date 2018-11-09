@@ -1,26 +1,37 @@
-'use strict';
-
 export default class Client {
-  constructor(name) {
+  constructor(name, comm) {
     this.socket = io('http://localhost:3000', {});
     this.name = name;
     this.partner = null;
     this.connection = new RTCPeerConnection();
     this.channel = this.connection.createDataChannel('chat');
+    this.comm = comm;
+    this.eventsNames = comm.eventsNames;
   }
 
   async init() {
 
-    this.socket.emit('addClient', this.name);
-    this.socket.on('offer', this.getOffer.bind(this));
-    this.socket.on('answer', this.getAnswer.bind(this));
-    this.socket.on('candidate', this.getCandidate.bind(this));
+    document.addEventListener(
+      `receivedOfferEvent-${this.name}`,
+      this.getOffer.bind(this)
+    );
+    document.addEventListener(
+      `receivedCandidateEvent-${this.name}`,
+      this.getCandidate.bind(this)
+    );
+    document.addEventListener(
+      `receivedAnswerEvent-${this.name}`,
+      this.getAnswer.bind(this)
+    );
 
     this.connection.addEventListener('icecandidate', async e => {
       if (e.candidate) {
-        this.socket.emit('candidate', {
-          partner: this.partner,
-          candidate: e.candidate
+        const { candidate } = e;
+        const partner = this.partner;
+
+        this.comm.sendCandidate({
+          partner,
+          candidate
         });
       }
     });
@@ -62,27 +73,27 @@ export default class Client {
       .createOffer()
       .then(_offer => (offer = _offer))
       .then(() => this.connection.setLocalDescription(offer))
-      .then(() => this.socket.emit('offer', { partner, offer }));
+      .then(() => this.comm.sendOffer({ partner, offer }));
   }
 
   getOffer(msg) {
-    const { offer, senderName } = msg;
+    const { offer, senderName } = msg.detail;
     let answer;
     this.connection
       .setRemoteDescription(offer)
       .then(() => this.connection.createAnswer())
       .then(_answer => (answer = _answer))
       .then(() => this.connection.setLocalDescription(answer))
-      .then(() => this.socket.emit('answer', { answer, senderName }));
+      .then(() => this.comm.sendAnswer({ answer, senderName }));
   }
 
   async getAnswer(msg) {
-    const { answer } = msg;
+    const { answer } = msg.detail;
     await this.connection.setRemoteDescription(answer);
   }
 
   async getCandidate(msg) {
-    const { candidate } = msg;
+    const { candidate } = msg.detail;
     await this.connection.addIceCandidate(candidate);
   }
 }

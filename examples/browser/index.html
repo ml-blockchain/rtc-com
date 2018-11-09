@@ -22,24 +22,32 @@
 
 <body>
 <script>
-    const alice = rtc.client('alice');
-    const bob = rtc.client('bob');
+
+    const alliceComm = rtc.communication('alice');
+    const bobComm = rtc.communication('bob');
+    const alice = rtc.client('alice', alliceComm);
+    const bob = rtc.client('bob', bobComm);
 
     alice.init();
     bob.init();
 
     alice.connect('bob')
       .then(channel => {
-      	console.log('alices channel', channel);
+
         channel.send('hi')
+
+        channel.onmessage = function(event) {
+            console.log("alice:", event.data);
+        };
+
 
     });
 
     bob.listen()
       .then(channel => {
-      	console.log('bobs channel ', channel);
+        channel.send('hi back')
         channel.onmessage = function(event) {
-          console.log(event.data);
+          console.log("bob:", event.data);
         };
       })
 
