@@ -31,28 +31,37 @@
     const alice = rtc.client('alice', alliceComm);
     const bob = rtc.client('bob', bobComm);
 
+
     alice.init();
     bob.init();
 
-    alice.connect('bob')
-      .then(channel => {
-
-        channel.send('hi')
-
-        channel.onmessage = function(event) {
-            console.log("alice:", event.data);
-        };
-
-
+    alice.connect('bob').then(() => {
+    	console.log("Allice is connected")
     });
 
-    bob.listen()
-      .then(channel => {
-        channel.send('hi back')
-        channel.onmessage = function(event) {
-          console.log("bob:", event.data);
-        };
-      })
+    bob.onConnection().then(() => {
+    	console.log("bob got a connection!")
+    });
+
+    const alliceChannel = rtc.dataChannel(alice);
+    alliceChannel.channel.onmessage = (msg) => console.log("allice: ", msg.data);
+    alliceChannel.start()
+    alliceChannel
+        .listen()
+        .then(() => {
+            console.log("allice's channel is open")
+            alliceChannel.channel.send('hi')
+        });
+
+    const bobChannel = rtc.dataChannel(bob);
+    bobChannel.channel.onmessage = (msg) => console.log("bob: ", msg.data);
+    bobChannel.start();
+    bobChannel
+        .listen()
+        .then(() => {
+            console.log("bob's channel is open")
+            bobChannel.channel.send('hi back')
+        });
 
 </script>
 

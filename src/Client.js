@@ -1,8 +1,7 @@
-import {defaultName} from "./utils/constants";
+import { defaultName } from './utils/constants';
 
 export default class Client {
   constructor(name = defaultName, communication) {
-    this.socket = io('http://localhost:3000', {});
     this.name = name;
     this.partner = null;
     this.connection = new RTCPeerConnection();
@@ -12,7 +11,6 @@ export default class Client {
   }
 
   async init() {
-
     document.addEventListener(
       `receivedOfferEvent-${this.name}`,
       this.getOffer.bind(this)
@@ -26,6 +24,18 @@ export default class Client {
       this.getAnswer.bind(this)
     );
 
+    this.connection.addEventListener('iceconnectionstatechange', async e => {
+
+      console.log('connection state for ', this.name, " : ", e.target.iceConnectionState);
+
+      if(this.connectionResolve && this.isConnecting && e.target.iceConnectionState === "completed") {
+				this.connectionResolve();
+			}
+			if (this.connectionResolve && !this.isConnecting && e.target.iceConnectionState === "connected") {
+				this.connectionResolve();
+			}
+    });
+
     this.connection.addEventListener('icecandidate', async e => {
       if (e.candidate) {
         const { candidate } = e;
@@ -38,34 +48,21 @@ export default class Client {
       }
     });
 
-    this.channel.onopen = event => {
-      const readyState = this.channel.readyState;
-      if (readyState === 'open' && this.partner) {
-        this.connectionResolve(this.channel);
-      }
-    };
-
-    this.connection.ondatachannel = function(event) {
-      this.channel = event.channel;
-      if (this.isListen) {
-        this.connectionResolve(this.channel);
-      }
-    }.bind(this);
+    // this.connection.ondatachannel = function(event) {
+    //   this.channel = event.channel;
+		// 	console.log(" ondatachannel ")
+		// 	if (this.connectionResolve) {
+    //     console.log(" ondatachannel ")
+    //     this.connectionResolve(this.channel);
+    //   }
+    // }.bind(this);
   }
 
   connect(partner) {
     this.partner = partner;
     this.sendOffer();
-    return new Promise((resolve, reject) => {
-      this.connectionResolve = resolve;
-    });
-  }
-
-  listen() {
-    this.isListen = true;
-    return new Promise((resolve, reject) => {
-      this.connectionResolve = resolve;
-    });
+    this.isConnecting = true;
+    return new Promise(resolve => (this.connectionResolve = resolve));
   }
 
   sendOffer() {
@@ -98,4 +95,8 @@ export default class Client {
     const { candidate } = msg.detail;
     await this.connection.addIceCandidate(candidate);
   }
+
+  onConnection() {
+		return new Promise(resolve => (this.connectionResolve = resolve));
+	}
 }
